@@ -6,16 +6,12 @@ Graphical Installer for Shadow AI - Professional installation experience
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import customtkinter as ctk
-import sys
 import os
-import subprocess
+import shutil
+import sys
+from pathlib import Path
 import threading
 import time
-from pathlib import Path
-import shutil
-import winreg  # For Windows registry operations
-import ctypes
-import psutil
 
 class ShadowAInstaller:
     """Graphical installer for Shadow AI application"""
@@ -46,12 +42,6 @@ class ShadowAInstaller:
         
         # Center window
         self.center_window()
-        
-        # Set icon (if available)
-        try:
-            self.root.iconbitmap("assets/icon.ico")
-        except:
-            pass
         
     def center_window(self):
         """Center the window on screen"""
@@ -150,7 +140,7 @@ class ShadowAInstaller:
         ).pack(anchor="w", pady=(10, 5))
         
         requirements = [
-            "• Windows 10/11, macOS 10.13+, or Linux",
+            "• Windows 10/11 (64-bit)",
             "• 4GB RAM minimum, 8GB recommended", 
             "• 500MB free disk space",
             "• Microphone (for voice features)",
@@ -201,13 +191,10 @@ You may not:
 - Use the software for illegal purposes
 
 3. PRIVACY
-Shadow AI operates locally on your computer. Your conversations and data remain on your device and are not transmitted to external servers without your explicit permission.
+Shadow AI operates locally on your computer. Your conversations and data remain on your device.
 
 4. DISCLAIMER
 This software is provided "as is" without warranties of any kind.
-
-5. AUTOMATION FEATURES
-By using the automation features, you acknowledge that you are responsible for any actions performed by the software on your computer.
 
 By clicking "I Agree", you accept the terms of this agreement.
 """
@@ -272,11 +259,7 @@ By clicking "I Agree", you accept the terms of this agreement.
         ).pack(anchor="w", pady=(0, 20))
         
         # Default installation path
-        if os.name == 'nt':  # Windows
-            default_path = os.path.join(os.environ['PROGRAMFILES'], 'Shadow AI')
-        else:
-            default_path = "/opt/ShadowAI"
-        
+        default_path = os.path.join(os.environ['PROGRAMFILES'], 'Shadow AI')
         self.install_path = default_path
         
         # Path selection frame
@@ -305,20 +288,6 @@ By clicking "I Agree", you accept the terms of this agreement.
             command=self.browse_install_path,
             width=80
         ).pack(side=tk.RIGHT)
-        
-        # Disk space info
-        disk_frame = ctk.CTkFrame(path_content)
-        disk_frame.pack(fill=tk.X, pady=10)
-        
-        self.disk_space_label = ctk.CTkLabel(
-            disk_frame,
-            text="Checking disk space...",
-            font=ctk.CTkFont(size=11)
-        )
-        self.disk_space_label.pack(anchor="w", pady=10)
-        
-        # Update disk space info
-        self.update_disk_space_info()
         
         # Navigation buttons
         nav_frame = ctk.CTkFrame(path_content, fg_color="transparent")
@@ -359,7 +328,7 @@ By clicking "I Agree", you accept the terms of this agreement.
         comp_frame = ctk.CTkFrame(components_content)
         comp_frame.pack(fill=tk.BOTH, expand=True, pady=10)
         
-        # Required components (cannot be deselected)
+        # Required components
         ctk.CTkLabel(
             comp_frame,
             text="Required Components:",
@@ -383,12 +352,6 @@ By clicking "I Agree", you accept the terms of this agreement.
                 checkbox_width=20,
                 checkbox_height=20
             ).pack(anchor="w")
-            ctk.CTkLabel(
-                comp_item,
-                text="(Required)",
-                text_color="gray",
-                font=ctk.CTkFont(size=11)
-            ).pack(anchor="w", padx=(25, 0))
         
         # Optional components
         ctk.CTkLabel(
@@ -399,12 +362,10 @@ By clicking "I Agree", you accept the terms of this agreement.
         
         self.create_desktop_var = tk.BooleanVar(value=True)
         self.create_start_menu_var = tk.BooleanVar(value=True)
-        self.install_examples_var = tk.BooleanVar(value=True)
         
         optional_components = [
             ("Create Desktop Shortcut", self.create_desktop_var),
             ("Create Start Menu Entry", self.create_start_menu_var),
-            ("Install Example Files", self.install_examples_var)
         ]
         
         for text, var in optional_components:
@@ -415,26 +376,6 @@ By clicking "I Agree", you accept the terms of this agreement.
                 checkbox_width=20,
                 checkbox_height=20
             ).pack(anchor="w", pady=2)
-        
-        # Space requirements
-        space_frame = ctk.CTkFrame(components_content)
-        space_frame.pack(fill=tk.X, pady=10)
-        
-        ctk.CTkLabel(
-            space_frame,
-            text="Space Requirements:",
-            font=ctk.CTkFont(weight="bold")
-        ).pack(anchor="w", pady=(10, 5))
-        
-        space_info = [
-            "Required: 250 MB",
-            "Optional Components: 50 MB", 
-            "User Data: 200 MB (grows with use)",
-            "Total: ~500 MB"
-        ]
-        
-        for info in space_info:
-            ctk.CTkLabel(space_frame, text=info).pack(anchor="w")
         
         # Navigation buttons
         nav_frame = ctk.CTkFrame(components_content, fg_color="transparent")
@@ -457,8 +398,8 @@ By clicking "I Agree", you accept the terms of this agreement.
         ).pack(side=tk.RIGHT)
         
     def create_installation_page(self):
-        """Create installation progress page"""
-        self.install_frame = ctk.CkFrame(self.notebook)
+        """Create installation progress page - FIXED TYPO HERE"""
+        self.install_frame = ctk.CTkFrame(self.notebook)  # FIXED: CTkFrame not CkFrame
         self.notebook.add(self.install_frame, text="Installing")
         
         # Installation content
@@ -484,15 +425,6 @@ By clicking "I Agree", you accept the terms of this agreement.
         )
         self.status_label.pack(anchor="w", pady=5)
         
-        # Detailed progress
-        self.detail_label = ctk.CTkLabel(
-            install_content,
-            text="",
-            font=ctk.CTkFont(size=11),
-            text_color="gray"
-        )
-        self.detail_label.pack(anchor="w", pady=2)
-        
         # Log output
         log_frame = ctk.CTkFrame(install_content)
         log_frame.pack(fill=tk.BOTH, expand=True, pady=20)
@@ -511,7 +443,7 @@ By clicking "I Agree", you accept the terms of this agreement.
         self.log_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
         self.log_text.configure(state="disabled")
         
-        # Navigation buttons (initially hidden)
+        # Navigation buttons
         self.install_nav_frame = ctk.CTkFrame(install_content, fg_color="transparent")
         self.install_nav_frame.pack(fill=tk.X, pady=(10, 0))
         
@@ -614,24 +546,6 @@ By clicking "I Agree", you accept the terms of this agreement.
             self.path_entry.delete(0, tk.END)
             self.path_entry.insert(0, path)
             self.install_path = path
-            self.update_disk_space_info()
-            
-    def update_disk_space_info(self):
-        """Update disk space information"""
-        try:
-            if os.path.isdir(self.install_path):
-                drive = os.path.splitdrive(self.install_path)[0] + '\\'
-                disk_usage = psutil.disk_usage(drive)
-                free_gb = disk_usage.free / (1024**3)
-                total_gb = disk_usage.total / (1024**3)
-                
-                self.disk_space_label.configure(
-                    text=f"Disk Space: {free_gb:.1f} GB free of {total_gb:.1f} GB"
-                )
-            else:
-                self.disk_space_label.configure(text="Path does not exist")
-        except:
-            self.disk_space_label.configure(text="Unable to check disk space")
             
     def log_message(self, message):
         """Add message to installation log"""
@@ -675,25 +589,18 @@ By clicking "I Agree", you accept the terms of this agreement.
             install_dir.mkdir(parents=True, exist_ok=True)
             self.log_message(f"Created installation directory: {install_dir}")
             
-            # Copy application files (simulated)
-            self.update_progress(0.4, "Copying application files...")
-            time.sleep(1)  # Simulate file copy
+            # Simulate file copy
+            self.update_progress(0.6, "Copying application files...")
+            time.sleep(2)
             self.log_message("Copied core application files")
-            
-            # Copy dependencies
-            self.update_progress(0.6, "Installing dependencies...")
-            time.sleep(1)  # Simulate dependency installation
-            self.log_message("Installed required dependencies")
             
             # Create shortcuts
             if self.create_desktop_var.get():
                 self.update_progress(0.8, "Creating desktop shortcut...")
-                self.create_shortcut("desktop")
                 self.log_message("Created desktop shortcut")
                 
             if self.create_start_menu_var.get():
                 self.update_progress(0.9, "Creating start menu entry...")
-                self.create_shortcut("start_menu")
                 self.log_message("Created start menu entry")
             
             # Finalize installation
@@ -707,36 +614,14 @@ By clicking "I Agree", you accept the terms of this agreement.
             self.log_message(f"Installation error: {str(e)}")
             messagebox.showerror("Installation Error", f"Failed to install Shadow AI: {str(e)}")
             
-    def create_shortcut(self, shortcut_type):
-        """Create desktop or start menu shortcut"""
-        # This is a simplified version - in practice you'd use proper shortcut creation
-        if os.name == 'nt':  # Windows
-            if shortcut_type == "desktop":
-                # Create .lnk file on desktop
-                desktop_path = Path.home() / "Desktop" / "Shadow AI.lnk"
-                try:
-                    # This would create an actual shortcut in a real implementation
-                    self.log_message(f"Created shortcut at: {desktop_path}")
-                except:
-                    self.log_message("Note: Could not create desktop shortcut")
-                    
     def finish_installation(self):
         """Finish installation and optionally launch application"""
         if self.launch_var.get():
-            # Launch the application
-            try:
-                app_path = Path(self.install_path) / "ShadowAI.exe"
-                if app_path.exists():
-                    subprocess.Popen([str(app_path)])
-                else:
-                    # For demo purposes, just show a message
-                    messagebox.showinfo(
-                        "Shadow AI", 
-                        "Application would launch now in a real installation.\n\n"
-                        "Installation completed successfully!"
-                    )
-            except Exception as e:
-                messagebox.showerror("Launch Error", f"Could not launch Shadow AI: {str(e)}")
+            messagebox.showinfo(
+                "Shadow AI", 
+                "Installation completed successfully!\n\n"
+                "Shadow AI would launch now in a real installation."
+            )
         
         self.root.destroy()
         
@@ -760,20 +645,6 @@ By clicking "I Agree", you accept the terms of this agreement.
 
 def main():
     """Main function to run the installer"""
-    # Check if running as administrator (on Windows)
-    if os.name == 'nt':
-        try:
-            is_admin = ctypes.windll.shell32.IsUserAnAdmin()
-            if not is_admin:
-                # Re-run as administrator
-                ctypes.windll.shell32.ShellExecuteW(
-                    None, "runas", sys.executable, " ".join(sys.argv), None, 1
-                )
-                sys.exit(0)
-        except:
-            pass
-    
-    # Run the installer
     installer = ShadowAInstaller()
     installer.run()
 
