@@ -1,4 +1,4 @@
-name: Build Shadow AI
+name: Build Shadow AI - Windows
 
 on:
   push:
@@ -11,9 +11,10 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
+    
     strategy:
       matrix:
-        python-version: [3.8, 3.9, 3.10, 3.11]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
     
     steps:
     - name: Checkout code
@@ -30,122 +31,75 @@ jobs:
         pip install -r requirements_dist.txt
         pip install pyinstaller
 
-    - name: Build application
+    - name: Build main application
       run: |
-        python build_step_by_step.py
+        python -m PyInstaller --clean --noconfirm --windowed --name=ShadowAI run_shadow_gui.py
+
+    - name: Build installer
+      run: |
+        python -m PyInstaller --clean --noconfirm --onefile --windowed --name=ShadowAI_Setup graphical_installer.py
+
+    - name: Create Windows package
+      run: |
+        mkdir ShadowAI-Windows-${{ matrix.python-version }}
+        cp -r dist/ShadowAI/* ShadowAI-Windows-${{ matrix.python-version }}/
+        cp dist/ShadowAI_Setup.exe ShadowAI-Windows-${{ matrix.python-version }}/
+        
+        # Create README
+        echo "Shadow AI - Windows Build (Python ${{ matrix.python-version }})" > ShadowAI-Windows-${{ matrix.python-version }}/README.txt
+        echo "" >> ShadowAI-Windows-${{ matrix.python-version }}/README.txt
+        echo "Run ShadowAI_Setup.exe for installation" >> ShadowAI-Windows-${{ matrix.python-version }}/README.txt
+        echo "Or run ShadowAI.exe for portable version" >> ShadowAI-Windows-${{ matrix.python-version }}/README.txt
 
     - name: Upload Windows artifacts
       uses: actions/upload-artifact@v4
       with:
         name: ShadowAI-Windows-${{ matrix.python-version }}
-        path: |
-          dist/ShadowAI/
-          dist/ShadowAI_Setup.exe
-        retention-days: 30
-
-  build-macos:
-    runs-on: macos-latest
-    strategy:
-      matrix:
-        python-version: [3.8, 3.9, 3.10, 3.11]
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements_dist.txt
-        pip install pyinstaller
-
-    - name: Build macOS application
-      run: |
-        python -m PyInstaller --clean --noconfirm --windowed --name=ShadowAI run_shadow_gui.py
-
-    - name: Upload macOS artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: ShadowAI-macOS-${{ matrix.python-version }}
-        path: dist/ShadowAI.app
-        retention-days: 30
-
-  build-linux:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [3.8, 3.9, 3.10, 3.11]
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements_dist.txt
-        pip install pyinstaller
-        sudo apt-get update
-        sudo apt-get install -y portaudio19-dev python3-pyaudio
-
-    - name: Build Linux application
-      run: |
-        python -m PyInstaller --clean --noconfirm --name=shadow-ai run_shadow_gui.py
-
-    - name: Upload Linux artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: ShadowAI-Linux-${{ matrix.python-version }}
-        path: dist/shadow-ai
+        path: ShadowAI-Windows-${{ matrix.python-version }}
         retention-days: 30
 
   create-release:
-    needs: [build-windows, build-macos, build-linux]
-    runs-on: ubuntu-latest
+    needs: build-windows
+    runs-on: windows-latest
     if: github.event_name == 'release'
     
     steps:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
 
-    - name: Display structure of downloaded files
-      run: ls -R
-
     - name: Create Release Bundle
       run: |
         mkdir release-package
-        # Copy Windows builds
-        find . -name "ShadowAI-Windows*" -type d | head -1 | xargs -I {} cp -r {} release-package/Windows
-        # Copy macOS builds  
-        find . -name "ShadowAI-macOS*" -type d | head -1 | xargs -I {} cp -r {} release-package/macOS
-        # Copy Linux builds
-        find . -name "ShadowAI-Linux*" -type d | head -1 | xargs -I {} cp -r {} release-package/Linux
+        # Copy the best Python version (3.10 recommended)
+        cp -r ShadowAI-Windows-3.10/* release-package/
         
-        # Create README
+        # Create comprehensive README
         cat > release-package/README.txt << EOF
-        Shadow AI - Release ${{ github.ref_name }}
+        Shadow AI - Windows Release
         
-        Platform Downloads:
-        - Windows: Run ShadowAI_Setup.exe for installation
-        - macOS: Use ShadowAI.app (drag to Applications)
-        - Linux: Run ./shadow-ai executable
+        🚀 Features:
+        - Multilingual support (Urdu, Pashto, English)
+        - Voice recognition and synthesis
+        - Computer automation
+        - File management
+        - Web search integration
         
-        System Requirements:
-        - 4GB RAM, 500MB storage
+        📥 Installation:
+        1. Run ShadowAI_Setup.exe as Administrator
+        2. Follow the installation wizard
+        3. Launch from Start Menu or Desktop
+        
+        🔧 Portable Version:
+        - Run ShadowAI.exe directly (no installation required)
+        
+        ⚠️ Requirements:
+        - Windows 10/11 (64-bit)
+        - 4GB RAM minimum
+        - 500MB free space
         - Microphone for voice features
-        - Internet for web features (optional)
         
-        Support: Create an issue at ${{ github.repository }}
+        🆘 Support:
+        Create an issue at: ${{ github.repository }}/issues
         EOF
 
     - name: Upload Release Assets
@@ -155,5 +109,5 @@ jobs:
       with:
         upload_url: ${{ github.event.release.upload_url }}
         asset_path: ./release-package
-        asset_name: ShadowAI-${{ github.ref_name }}-All-Platforms.zip
+        asset_name: ShadowAI-Windows.zip
         asset_content_type: application/zip
