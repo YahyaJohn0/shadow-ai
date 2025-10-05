@@ -26,3 +26,6 @@ langdetect>=1.0.9
 # Optional (for enhanced features)
 pygetwindow>=0.0.9
 pywin32>=300; sys_platform == 'win32'
+
+textblob==0.17.1
+nltk==3.8.1

@@ -73,6 +73,17 @@ a = Analysis(
         'win32api',  # For Windows
         'win32con',  # For Windows
         'win32gui',  # For Windows
+
+         # ... existing imports ...
+        'textblob',
+        'nltk',
+        'nltk.corpus',
+        'nltk.tokenize',
+        'nltk.tag',
+        'nltk.chunk',
+        'nltk.parse',
+        'nltk.corpus.reader',
+        'nltk.corpus.util',
     ],
     hookspath=[],
     hooksconfig={},

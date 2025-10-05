@@ -47,6 +47,17 @@ hiddenimports = [
     # System and OS
     'os', 'sys', 'pathlib', 'platform', 'subprocess', 'shutil',
     'ctypes', 'win32api', 'win32con', 'win32gui',
+
+     # ... existing imports ...
+    'textblob',
+    'nltk',
+    'nltk.corpus',
+    'nltk.tokenize',
+    'nltk.tag',
+    'nltk.chunk',
+    'nltk.parse',
+    'nltk.corpus.reader',
+    'nltk.corpus.util',
 ]
 
 a = Analysis(
